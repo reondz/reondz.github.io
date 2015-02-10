@@ -14,7 +14,7 @@ description: "这里会是一个乱七八糟的地方＝w＝"
         </h3>
         {% endif %}
     </a>
-    <p class="post-meta">Posted by {% if post.author %}{{ post.author }}{% else %}{{ site.title }}{% endif %} on {{ post.date | date: "%B %-d, %Y" }}</p>
+    <p class="post-meta">由{% if post.author %}{{ post.author }}{% else %}{{ site.title }}{% endif %}发布于{{ post.date | date: "%B %-d, %Y" }}</p>
     <p> {{ post.content }} </p>
 </div>
 <hr>
