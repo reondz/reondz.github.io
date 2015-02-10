@@ -1,6 +1,6 @@
 ---
-layout:default
-title:Hello,Reon's Blog
+layout : post
+title  : Hello,Reon's Blog
 ---
 
 我的第一篇文章
