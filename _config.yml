@@ -2,12 +2,10 @@
 title: Reon‘s Blog
 header-img: img/home-bg.jpg
 email: reondz@gmail.com
-description: "Reon Dz."
+description: "Reon Dz"
 baseurl: ""
 url: "http://reondz.github.io"
-twitter_username: ReonDz
 github_username:  ReonDz
-facebook_username:  ReonDz
 
 # Build settings
 markdown: kramdown
