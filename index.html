@@ -6,7 +6,8 @@ description: "这里会是一个乱七八糟的地方＝w＝"
 {% for post in paginator.posts %}
 <div class="post-preview">
     <a href="{{ post.url | prepend: site.baseurl }}">
-        <h2 class="post-title">            {{ post.title }}
+        <h2 class="post-title">            
+            {{ post.title }}
         </h2>
         {% if post.subtitle %}
         <h3 class="post-subtitle">
@@ -14,8 +15,15 @@ description: "这里会是一个乱七八糟的地方＝w＝"
         </h3>
         {% endif %}
     </a>
-    <p class="post-meta">由{% if post.author %}{{ post.author }}{% else %}{{ site.title }}{% endif %}发布于{{ post.date | date: "%B %-d, %Y" }}</p>
-    <p> {{ post.content }} </p>
+    <p class="post-meta">
+        由{% if post.author %}{{ post.author }}{% else %}{{ site.title }}{% endif %}发布于{{ post.date | date: "%B %-d, %Y" }}
+    </p>
+    <p> 
+        {{ post.content  | | split:'<!--more-->' | first }} 
+    </p>
+    <a href="{{ post.url | prepend: site.baseurl }}">
+       继续阅读
+    </a>
 </div>
 <hr>
 {% endfor %}
