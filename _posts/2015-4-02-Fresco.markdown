@@ -4,7 +4,7 @@ title: Fresco
 subtitle: 
 date: 2015-04-02 17:52:00
 author: Reon
-header-img: "img/post-bg-06.jpg"
+header-img: "https://fbcdn-dragon-a.akamaihd.net/hphotos-ak-xtf1/t39.2365-6/11057083_393469260836543_318035251_n.png"
 ---
 ##前言
 在Facebook上快速而高效的展示图片尤其重要。Facebook过去几年在高效的存储图片上踩过很多坑。图片很大，但设备（内存）却很小。每个像素就会占用4字节（byte）－分别代表红，绿，蓝以及透明度。如果手机的分辨率是480*800的，那么单张全屏尺寸的图片就会占用到1.5M的内存。手机通常都不会有很大的内存，同时Android还会把内存分给多个应用使用。在一些设备上，Facebook只被分到了可怜的16MB，这仅仅只是一张图片所需内存的10倍！   
