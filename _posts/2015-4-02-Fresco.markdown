@@ -62,30 +62,33 @@ Fresco的解决方案是使用数据源。它提供了一个订阅方法,调用�
 接口设计的十分简洁，Producer只有一个方法：produceResults,将一个Consumer对象作为参数。而Consumer则有一个onNewResult方法。   
 Fresco使用这样的系统将生产者们联系到一起，假设有一个生产者的任务是将类型I转换为类型O。代码会是这样的:    
 
-    public class OutputProducer<I, O> implements Producer<O> {
-	     private final Producer<I> mInputProducer;
-	     public OutputProducer(Producer<I> inputProducer) {
-   		    this.mInputProducer = inputProducer;
-   	     }    
+```
+public class OutputProducer<I, O> implements Producer<O> {
+    private final Producer<I> mInputProducer;
 
-   	    public void produceResults(Consumer<O> outputConsumer, ProducerContext context) {
-   		    Consumer<I> inputConsumer = new InputConsumer(outputConsumer);
-   		    mInputProducer.produceResults(inputConsumer, context);
- 	    }
- 	
- 	     private static class InputConsumer implements Consumer<I> {
-             private final Consumer<O> mOutputConsumer;
+    public OutputProducer(Producer<I> inputProducer) {
+        this.mInputProducer = inputProducer;
+    }
 
-             public InputConsumer(Consumer<O> outputConsumer) {
-                mOutputConsumer = outputConsumer;
-            }
+    public void produceResults(Consumer<O> outputConsumer, ProducerContext context) {
+        Consumer<I> inputConsumer = new InputConsumer(outputConsumer);
+        mInputProducer.produceResults(inputConsumer, context);
+    }
 
-             public void onNewResult(I newResult, boolean isLast) {
-                O output = doActualWork(newResult);
-                mOutputConsumer.onNewResult(output, isLast);      
-             }
-         }
-	}
+    private static class InputConsumer implements Consumer<I> {
+        private final Consumer<O> mOutputConsumer;
+
+        public InputConsumer(Consumer<O> outputConsumer) {
+            mOutputConsumer = outputConsumer;
+        }
+
+        public void onNewResult(I newResult, boolean isLast) {
+            O output = doActualWork(newResult);
+            mOutputConsumer.onNewResult(output, isLast);
+        }
+    }
+}
+```
 
 这使得可以将一系列复杂步骤连锁在一起，同时保证它们逻辑的独立性。
 
@@ -109,10 +112,10 @@ DraweeVies只有部分有限的方法，但它们的提供功能是决定性的�
 ##翻译狗的结语
 这次翻译属于translate on the fly了，半个晚上的成果，很多细节并没有处理好，比如这个on the fly是个什么鬼就一直没有搞明白，然后pipeline的框架也并没有完全理解，望大神们可以轻喷。
 
-总结一下，实际上闪光点就是，
-1. 巧用inPurgeable属性以及lockpixel
-2. pipeline的思想
-3. Drawee的实现
+总结一下，实际上闪光点就是，   
+1. 巧用inPurgeable属性以及lockpixel    
+2. pipeline的思想   
+3. Drawee的实现   
 
 后续会继续补充，感谢阅读。
 
