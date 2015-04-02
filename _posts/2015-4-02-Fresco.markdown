@@ -27,7 +27,7 @@ Ashmem在Android应用中无法被直接访问，但是总有一些例外，图�
 
 ```
 BitmapFactory.Options = new BitmapFactory.Options();
-options.inPurgeable = true;
+options.inPurgeable = true;   
 Bitmap bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.length, options);
 ```
 
