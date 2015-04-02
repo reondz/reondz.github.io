@@ -1,0 +1,137 @@
+---
+layout: post  
+title: Fresco  
+subtitle: 
+date: 2015-04-02 17:52:00
+author: Reon
+header-img: "img/post-bg-06.jpg"
+---
+##前言
+在Facebook上快速而高效的展示图片尤其重要。Facebook过去几年在高效的存储图片上踩过很多坑。图片很大，但设备（内存）却很小。每个像素就会占用4字节（byte）－分别代表红，绿，蓝以及透明度。如果手机的分辨率是480*800的，那么单张全屏尺寸的图片就会占用到1.5M的内存。手机通常都不会有很大的内存，同时Android还会把内存分给多个应用使用。在一些设备上，Facebook只被分到了可怜的16MB，这仅仅只是一张图片所需内存的10倍！   
+
+文章翻译自[戳我](https://code.facebook.com/posts/366199913563917/introducing-fresco-a-new-image-library-for-android/)，fresco的中文文档在[戳我](http://fresco-cn.org/)
+
+<!--more-->  
+人被杀就会死，内存爆应用就会崩。Facebook为了解决这个问题，开源了一个称为Fresco的库，它会管理图片以及图片使用的内存。从此，拜拜crash。
+
+##内存管理
+为了明白Facebook的Fresco干了什么，首先需要去了解一下在Android中内存机制是如何的。   
+
+首先是Java堆内存（Java Heap），在Android中，每个应用可持有的内存大小被手机厂商严格规定了。代码中所有New出来的对象，都会使用Java的堆内存。这块内存使用起来相对是比较安全的。内存有GC机制，在应用退出或关闭的时候，系统会自动的回收它。   
+但不幸的是，这个GC的过程恰好是问题所在。简单来说GC的时候，Android会将所有资源都让出来，你的应用也在此列，这是应用卡顿最常见的原因之一。这对用户来说是非常糟糕的体验。   
+而相反的，底层heap(native Heap)用于使用C＋＋时New出来的对象。比起Java Heap来说这是一块非常充足的内存块。应用的这块内存，只受限于设备的物理内存大小（目前主流的都是1G甚至2G的）。同时它也没有GC的机制去拖慢应用。但是有利必有弊，C＋＋的代码必须对每一个对象做主动负责的内存管理，如果错漏了某些代码的内存释放，会造成内存泄漏并最终导致程序的崩溃。   
+Android还有另一块内存区域，学名匿名共享内存（ashmem，全称Anonymous Shared Memory）。它和natvie heap非常类似，并提供了额外的系统调用。Android系统可以解锁(unpin)这块内存而不是释放它。这是一个慢释放机制，这块内存只会在系统需要更多内存的时候被释放。当Android锁定"pins"这块内存的时候，如果它还没被释放掉，那么旧数据还会在该内存中。   
+
+##可清除图片（Purgeable bitmaps）
+Ashmem在Android应用中无法被直接访问，但是总有一些例外，图片就是其中之一。创建一个被decode过的图片时(也就是bitmap)，Android允许将图片设定为可清除的。   
+
+```
+BitmapFactory.Options = new BitmapFactory.Options();
+options.inPurgeable = true;
+Bitmap bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.length, options);
+```
+
+可清除图片就会在ashmem中。然而，GC不会自动的去释放它们。在绘图系统渲染图片时，Android系统会锁定(pin)这一块内存，而在渲染结束后，则会解锁(unpin)它。没有被解锁(unpin)过的内存随时都可以被系统回收。而如果一个被解锁(unpin)过的图片如果需要被重新绘制，系统便实时迅速地的decode(decode it again,on the fly)它。   
+这看起来是一个非常完美的解决方案，但是问题在于这实时迅速地的decode是在UI线程完成的。而decode图片无疑是一个很耗CPU的动作，UI线程可能会因此而阻塞住。正是因为这个原因，[Google现在建议开发者不要使用该功能](http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inPurgeable)（即可清除图片）。    
+他们现在推荐使用另外一个属性，inBitmap。问题又来了，这个属性在Android3.0才可用。除此之外，除非应用加载的图片都是同样大小，否则这个属性也不会很有效。Facebook的图片就肯定不是同样大小的。这个缺陷到了4.4才被改善。因此我们需要一个可以通用的从Android2.3版本开始支持的用于Facebook的方案。   
+#＃试试我们的新方案吧
+熊掌与鱼不可兼得，然而Facebook做到了兼得。他们找出了一个方案在UI表现和内存上都足够优秀。   
+如果可以提前异步锁定(pin)掉对应的内存，并确保它永远不会被解锁(unpin)，这样便可以让bitmap在ashmem中而不用承担阻塞UI现场的问题。幸运的是，这件事是可以做到的，Android的NDK刚好提供了这样的一个方法，叫做AndroidBitmap_lockPixels。这个方法设计的初衷是对应unlockPixels再次解锁(unpin)内存方法的。    
+而Facebook的突破口在于他们意识到他们没必要按正常的方式使用该方法。如果只调用lockPixels而不匹配的调用unlockPixels的话，便可以创建一个不在Java heap中并且不会拖累UI线程的图片了。这一切只需要简单的几行C++代码便可以了。   
+
+##用C++的思维写Java代码
+蜘蛛侠说过，能力越大责任越大。锁定(pin)过的可清除图片既不会有GC来照顾它，也不会有ashmen清除特性去保证没有内存泄漏。只能是自己动手，丰衣足食。   
+在C++里，通常的做法是实现提供引用计数的智能指针。这充分利用了C++的特性，拷贝创建，赋值符，析构。Java中就没有这些语法糖，而是把生杀大权都交给了GC。所以我们需要找到方法在Java中实现C＋＋才有的特性。   
+Fresco构造了2个类去完成这个需求，一个是SharedReference。它有两个方法，addReference和deleteReference，调用者必须在引用对象和结束引用时调用它们。而当reference计数归0的时候，资源便会被回收(比如调用Bitmap.recycle)。   
+这种写法显然特别容易犯错并导致问题，Java本身就是一门为了给程序员各种犯错提高容忍度的语言。所以在SharedReference的基础之上，Fresco还封装了CloseableReference的类。它实现了Closeable和Cloneable接口。其构造函数和clone()方法会自动调用addReference(),而close()方法则会调用deleteReference()。因此Java开发者只需要遵循下面两条简单的准则   
+1. 将CloseableReference赋值给新对象时，使用clone()   
+2. 在代码块的结束部分，调用close()方法，通常在finally中调用   
+这些规则可以有效的避免内存泄漏，自此Facebook可以尽情的在Android客户端上享用natvie内存管理了。   
+
+##不只是Loader-它是pipeline
+在移动设备上显示一张图片的过程有很多步骤:  
+![image](https://fbcdn-dragon-a.akamaihd.net/hphotos-ak-xtf1/t39.2365-6/11057083_393469260836543_318035251_n.png)
+一些出色的开源图片加载库如Picasso，Universal Image Loader，Glide，Volley等为Android的开发做出了巨大贡献。Facebook相信Fresco可以通过一些重要的方法变得更出色。   
+以管道的思维去思考这些步骤而不是以loader的思维会带来差别。每一个步骤应该是尽可能独立于其他的步骤，取一个输入和一些参数，然后做出输出。因此某些操作是可以并行的，其他的则是串行。某一些只在一些特殊情况下才执行。某一些对所在线程是有要求的。而且，当Facebook考虑使用渐进式图像时，问题又跟复杂了。(具体如上图所示) 
+很多Facebook的用户是在比较差的网络环境下使用Facebook的。Facebook希望他们的用户可以尽快尽可能的看到图片，甚至在图片下载完成之前就可以看到。   
+
+##停止忧虑，流水线可以解决问题
+传统的Java异步代码是这样运作的:这部分代码会被提交给另一个线程，同时会有一个对象去检查结果是否准备好了，如果准备好了，那么就执行这段被提交的代码。然而这是在假设只有一个结果的情况，当处理多张正在加载的图片时，Facebook希望有整个序列的结果。   
+Fresco的解决方案是使用数据源。它提供了一个订阅方法,调用者必须传入一个DataSubscriber对象和一个Executor对象。DataSubscriber接受DataSource的通知，中间步骤和结果都有，并提供一个简单的方法去区分它们。因为我们经常需要调用某个明确对象的close方法，DataSourece本身也是Closeable接口的实现。
+如上图，每个方框的执行都使用一个新的框架，即生产消费模型(Producer/Consumer)。Facebook是从[ReactiveX](http://reactivex.io/)的框架中获得灵感的。Fresco系统的接口和[RxJava](https://github.com/ReactiveX/RxJava)非常相似，而且更合适用于移动开发和建立对Closeable的支持。    
+接口设计的十分简洁，Producer只有一个方法：produceResults,将一个Consumer对象作为参数。而Consumer则有一个onNewResult方法。   
+Fresco使用这样的系统将生产者们联系到一起，假设有一个生产者的任务是将类型I转换为类型O。代码会是这样的:    
+
+    public class OutputProducer<I, O> implements Producer<O> {
+	     private final Producer<I> mInputProducer;
+	     public OutputProducer(Producer<I> inputProducer) {
+   		    this.mInputProducer = inputProducer;
+   	     }    
+
+   	    public void produceResults(Consumer<O> outputConsumer, ProducerContext context) {
+   		    Consumer<I> inputConsumer = new InputConsumer(outputConsumer);
+   		    mInputProducer.produceResults(inputConsumer, context);
+ 	    }
+ 	
+ 	     private static class InputConsumer implements Consumer<I> {
+             private final Consumer<O> mOutputConsumer;
+
+             public InputConsumer(Consumer<O> outputConsumer) {
+                mOutputConsumer = outputConsumer;
+            }
+
+             public void onNewResult(I newResult, boolean isLast) {
+                O output = doActualWork(newResult);
+                mOutputConsumer.onNewResult(output, isLast);      
+             }
+         }
+	}
+
+这使得可以将一系列复杂步骤连锁在一起，同时保证它们逻辑的独立性。
+
+##动画
+表情，是以Gif活着WebP格式存储的动画文件。它们深受用户喜爱。支持它们是一个新的挑战。一个动画不单单是一张图片而是一些列图片的集合，其中的每一张都需要被decode，在内存中存储然后展示出来。在内存中存储大动画中的每一帧不是个靠谱的方案。   
+Fresco构造了AnimatedDrawable，一个负责绘制动画的Drawable，它有两套实现，一套GIF，一套WebP。AnimatedDrawable提供了Android标准的动画接口，因此调用者可以在任何时候start或stop动画。为了优化内存的使用，当动画足够小的时候，将会把它们在内存缓存，但如果动画比较大，则实时迅速的decode它们（decode on the fly）。这些行为对调用者来说是可调的。   
+两种都是通过C＋＋实现的。Fresco同时持有了解码后的数据和解码前的原数据，比如宽高。这些数据使用引用计数，这允许java端多个实例同步访问。
+
+##Drawee
+相信攻城狮们都会被这样要求过：当图片正在从网络下载时，最好可以有个占位图。当下载失败时，最好有个出错提示。当图片下载好了，准备显示时，有个fade-in的动画就更好了。有的时候，还需要缩放甚至对图片做矩阵变换，使用硬件加速去渲染它。圆角要有，圆头像要有。而上面这些处理，最好又快又流畅啦。   
+Facebook之前使用Android View的实现，当图片加载完成时替换placeholder的方案实际上是非常慢的。改变View会导致Android执行layout，我们绝对是不希望用户在滑动的时候发生这种事产生这样的开销的。明智的做法应该是使用Android的Drawbale去完成这件事，它可以实时迅速的更换图片(swapped out on the fly)。   
+所以Fresco构造了Drawee类。这是一个类MVC模式用于展示图片的类。    
+Model称为DraweeHierarchy。它由多层Drawable组成，每一层负责为展示的图片添加不同的效果，展示，层叠，渐入效果或者缩放。
+DraweeControllers链接着image pipeline，或者任意的图片加载器。它负责实现图片的各种操作，接收从pipeline传来的event并决定是否处理。它们控制DraweeHierarchy显示的内容，是placeholder，错误提示还是最后完成的图片。   
+DraweeVies只有部分有限的方法，但它们的提供功能是决定性的。它们监听Android系统事件－－view是否还在屏幕中。当已经不在屏幕中时，DraweeView可以告知DraweeController去关闭图片使用的资源。这可以避免内存泄漏。而且，controller还可以通知image pipeline去取消网络请求，如果该请求还没有发出去。并且，在图片列表滚动的时候，这样也不会耗尽网络资源。   
+通过这些特性，展示图片的繁重工作便迎刃而解。调用代码只需要实例化一个DraweeView对象，指定url以及其他一些参数。其他的工作都是自动完成的。开发者再也不需要担心管理图片内存或者频繁的图片set动作。所有事情都有Fresco为其完成。
+
+##结语
+总之就是Facebook说自己很自豪宣布开源Fresco，希望可以给广大开发者打来更好的开发体验和效果blablabla。
+
+##翻译狗的结语
+这次翻译属于translate on the fly了，半个晚上的成果，很多细节并没有处理好，比如这个on the fly是个什么鬼就一直没有搞明白，然后pipeline的框架也并没有完全理解，望大神们可以轻喷。
+
+总结一下，实际上闪光点就是，
+1. 巧用inPurgeable属性以及lockpixel
+2. pipeline的思想
+3. Drawee的实现
+
+后续会继续补充，感谢阅读。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
