@@ -4,7 +4,7 @@ title: Fresco
 subtitle: 
 date: 2015-04-02 17:52:00
 author: Reon
-header-img: "https://fbcdn-dragon-a.akamaihd.net/hphotos-ak-xtf1/t39.2365-6/11057083_393469260836543_318035251_n.png"
+header-img: "http://7xiegl.com1.z0.glb.clouddn.com/fresco_pipeline.png"
 ---
 ##前言
 在Facebook上快速而高效的展示图片尤其重要。Facebook过去几年在高效的存储图片上踩过很多坑。图片很大，但设备（内存）却很小。每个像素就会占用4字节（byte）－分别代表红，绿，蓝以及透明度。如果手机的分辨率是480*800的，那么单张全屏尺寸的图片就会占用到1.5M的内存。手机通常都不会有很大的内存，同时Android还会把内存分给多个应用使用。在一些设备上，Facebook只被分到了可怜的16MB，这仅仅只是一张图片所需内存的10倍！   
@@ -50,7 +50,7 @@ Fresco构造了2个类去完成这个需求，一个是SharedReference。它有�
 
 ##不只是Loader-它是pipeline
 在移动设备上显示一张图片的过程有很多步骤:  
-![image](https://fbcdn-dragon-a.akamaihd.net/hphotos-ak-xtf1/t39.2365-6/11057083_393469260836543_318035251_n.png)
+![image](http://7xiegl.com1.z0.glb.clouddn.com/fresco_pipeline.png)
 一些出色的开源图片加载库如Picasso，Universal Image Loader，Glide，Volley等为Android的开发做出了巨大贡献。Facebook相信Fresco可以通过一些重要的方法变得更出色。   
 以管道的思维去思考这些步骤而不是以loader的思维会带来差别。每一个步骤应该是尽可能独立于其他的步骤，取一个输入和一些参数，然后做出输出。因此某些操作是可以并行的，其他的则是串行。某一些只在一些特殊情况下才执行。某一些对所在线程是有要求的。而且，当Facebook考虑使用渐进式图像时，问题又跟复杂了。(具体如上图所示) 
 很多Facebook的用户是在比较差的网络环境下使用Facebook的。Facebook希望他们的用户可以尽快尽可能的看到图片，甚至在图片下载完成之前就可以看到。   
