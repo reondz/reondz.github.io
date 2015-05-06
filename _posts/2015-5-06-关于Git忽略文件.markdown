@@ -6,7 +6,7 @@ date: 2015-05-06 10:56:00
 author: Reon    
 header-img: "img/git.jpg"  
 ---
-我自己是个带有偏执外加强迫症的人，所以每次git status，看到一些.DS_Store文件，我就会莫名的心烦。Git是有办法忽略这些文件的，虽然这并不是什么复杂高端的技巧，不过希望养成书写博客的我还是做个记录吧。  
+我自己是个带有偏执外加强迫症的人，所以每次git status，看到一些.DS_Store文件，我就会莫名的心烦。Git是有办法忽略这些文件的，虽然这并不是什么复杂高端的技巧，不过希望养成书写博客习惯的我还是做个记录吧。  
 <!--more-->    
 首先简单聊一下Git，实际上Git分为3个区域： 
  
@@ -38,7 +38,7 @@ header-img: "img/git.jpg"
 并没有，因为在今后的使用中，我发现我需要在所有Git目录下加这样的.gitignore配置，心都操碎了。有没有办法可以全局配置呢？让这个配置对所有的Git目录都生效。`git config`可以帮到我们。  
 
 ###Git Config  
-`git config --list`命令可以让你查看现有的配置，（在这里我们就先忽略其他的配置项了，有兴趣的同学可以戳[这里](http://http://git-scm.com/book/zh/v1/%E8%B5%B7%E6%AD%A5-%E5%88%9D%E6%AC%A1%E8%BF%90%E8%A1%8C-Git-%E5%89%8D%E7%9A%84%E9%85%8D%E7%BD%AE)做更多的了解）实际上它是一个文件，文件的位置在用户根目录，名称是.gitconfig。以下是添加全局忽略文件的步骤：
+`git config --list`命令可以让你查看现有的配置，（在这里我们就先忽略其他的配置项了，有兴趣的同学可以戳[这里](http://git-scm.com/book/zh/v1/%E8%B5%B7%E6%AD%A5-%E5%88%9D%E6%AC%A1%E8%BF%90%E8%A1%8C-Git-%E5%89%8D%E7%9A%84%E9%85%8D%E7%BD%AE)做更多的了解）实际上它是一个文件，文件的位置在用户根目录，名称是.gitconfig。以下是添加全局忽略文件的步骤：
   
 	1. 创建~/.gitignore_global文件，把需要全局忽略的文件写入该文件，语法和.gitignore一样
 	2. 在~/.gitconfig中引入.gitignore_global文件  
@@ -49,7 +49,7 @@ header-img: "img/git.jpg"
 	
 到这里，忽略文件的一些基本知识已经讲清楚了。回顾一下，先是介绍了单个Git目录可以通过.gitignore文件去配置忽略的文件，同时忽略文件的写法是glob模式，然后是可以通过git config配置全局忽略文件。   
 
-然而，我在用这样的方法忽略文件时，依然会有`Changes not staged for commit:`的提示，那是因为.gitignore只能忽略那些原来没有被track的文件，如果已经纳入了版本管理，修改.gitignore也是无效的。可以通过`git update-index --assume-unchanged PATH`（PATH是需要忽略的文件路径）命令去设置不要检查改文件（看到一个[回答](http://http://segmentfault.com/q/1010000000430426)，说这样的做法是不对的）。或者（正确的方法？）使用`git rm --cached file`命令去去掉对该文件的版本管理。  
+然而，我在用这样的方法忽略文件时，依然会有`Changes not staged for commit:`的提示，那是因为.gitignore只能忽略那些原来没有被track的文件，如果已经纳入了版本管理，修改.gitignore也是无效的。可以通过`git update-index --assume-unchanged PATH`（PATH是需要忽略的文件路径）命令去设置不要检查改文件（看到一个[回答](http://segmentfault.com/q/1010000000430426)，说这样的做法是不对的）。或者（正确的方法？）使用`git rm --cached file`命令去去掉对该文件的版本管理。  
 
 至此，我终于可以摆脱烦人的各种应该忽略掉的文件了。  
 
