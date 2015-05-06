@@ -1,0 +1,57 @@
+---
+layout: post   
+title: 关于Git忽略文件 
+subtitle: 已经比较熟悉Git的同学可以绕道啦＝w＝  
+date: 2015-05-06 10:56:00    
+author: Reon    
+header-img: "img/git.jpg"  
+---
+我自己是个带有偏执外加强迫症的人，所以每次git status，看到一些.DS_Store文件，我就会莫名的心烦。Git是有办法忽略这些文件的，虽然这并不是什么复杂高端的技巧，不过希望养成书写博客的我还是做个记录吧。  
+<!--more-->    
+首先简单聊一下Git，实际上Git分为3个区域： 
+ 
+	1. add前区域（untracked的文件）  
+	2. add后commit前区域（tracked，有变动未提交的文件）  
+	3. commit区域（已经被提交到仓库的文件，当然这里还有本地仓库和远程仓库的区分，这里先不提了）  
+
+再回来说我遇到的这个问题，细心的Mac用户可以发现，Mac每个目录都会有个文件叫.DS_Store，它是用于存储当前文件夹的一些Meta信息。所以每次查看Git目录的状态，如果没有add这个.DS_Store文件，会有`Untracked files:`的提示，add了它，又会常有`Changes not staged for commit:`的提示，是不是像个苍蝇一样特别烦？要解决这个烦人的小妖精，我们需要用到.gitignore文件去配置Git目录中需要忽略的文件。  
+
+###```.gitignore```文件用于忽略文件,其规范如下:   
+	1. 所有空行或者以注释符号 ＃ 开头的行都会被 Git 忽略。      
+	2. 可以使用标准的 glob 模式匹配。   
+	3. 匹配模式最后跟反斜杠（/）说明要忽略的是目录。   
+	4. 要忽略指定模式以外的文件或目录，可以在模式前加上惊叹号（!）取反。
+	
+###```glob```模式要点:
+    1. *:任意个任意字符,   
+    2. []:匹配任何一个在方括号中的字符,   
+    3. ?:匹配一个任意字符，
+    4. [0-9]:匹配字符范围内所有字符  
+   
+所以，我们只需要在对应的Git目录下，创建一个.gitignore文件，然后配置上.DS_Store即可，步骤如下:  
+
+	1.命令行下使用touch .gitignore创建.gitignore文件  
+	2.vim .gitignore（如果不会用vim可以直接open），输入.DS_Store 换行再输入*/.DS_Store  
+	3.保存即可生效，这里是忽略了当前目录的.DS_Store以及其子目录的.DS_Store  
+	
+这样问题就解决了么？  
+并没有，因为在今后的使用中，我发现我需要在所有Git目录下加这样的.gitignore配置，心都操碎了。有没有办法可以全局配置呢？让这个配置对所有的Git目录都生效。`git config`可以帮到我们。  
+
+###Git Config  
+`git config --list`命令可以让你查看现有的配置，（在这里我们就先忽略其他的配置项了，有兴趣的同学可以戳[这里](http://http://git-scm.com/book/zh/v1/%E8%B5%B7%E6%AD%A5-%E5%88%9D%E6%AC%A1%E8%BF%90%E8%A1%8C-Git-%E5%89%8D%E7%9A%84%E9%85%8D%E7%BD%AE)做更多的了解）实际上它是一个文件，文件的位置在用户根目录，名称是.gitconfig。以下是添加全局忽略文件的步骤：
+  
+	1. 创建~/.gitignore_global文件，把需要全局忽略的文件写入该文件，语法和.gitignore一样
+	2. 在~/.gitconfig中引入.gitignore_global文件  
+	   [core]  
+	   excludesfile = /Users/reon/.gitignore_global  
+	   也可以通过git config --global core.excludesfile/Users/reon/.gitignore_global命令来实现  
+	3. 配置成功，可以去验证是否生效了  
+	
+到这里，忽略文件的一些基本知识已经讲清楚了。回顾一下，先是介绍了单个Git目录可以通过.gitignore文件去配置忽略的文件，同时忽略文件的写法是glob模式，然后是可以通过git config配置全局忽略文件。   
+
+然而，我在用这样的方法忽略文件时，依然会有`Changes not staged for commit:`的提示，那是因为.gitignore只能忽略那些原来没有被track的文件，如果已经纳入了版本管理，修改.gitignore也是无效的。可以通过`git update-index --assume-unchanged PATH`（PATH是需要忽略的文件路径）命令去设置不要检查改文件（看到一个[回答](http://http://segmentfault.com/q/1010000000430426)，说这样的做法是不对的）。或者（正确的方法？）使用`git rm --cached file`命令去去掉对该文件的版本管理。  
+
+至此，我终于可以摆脱烦人的各种应该忽略掉的文件了。  
+
+感谢阅读，欢迎交流＝w＝。
+ 
