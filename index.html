@@ -16,10 +16,16 @@ description: "这里会是一个乱七八糟的地方＝w＝"
         {% endif %}
     </a>
     <p class="post-meta">
-        由{% if post.author %}{{ post.author }}{% else %}{{ site.title }}{% endif %}发布于{{ post.date | date: "%B %-d, %Y" }}
+        {{ post.date | date: "%-d %B %Y" }} 
+        {% if post.category %}
+            • 于
+            <a href="{{ post.url | prepend: site.baseurl }}">
+                {{post.category}}
+            </a>
+        {% endif %}
     </p>
     <p> 
-        {{ post.content  | | split:'<!--more-->' | first }} 
+        {{ post.content  || split:'<!--more-->' | first }} 
     </p>
     <a href="{{ post.url | prepend: site.baseurl }}">
        继续阅读
