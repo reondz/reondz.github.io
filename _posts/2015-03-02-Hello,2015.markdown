@@ -2,7 +2,8 @@
 layout: post  
 title: Hello,2015  
 subtitle: 
-date: 2015-03-02 10:21:00
+category: 自言    
+date: 2015-03-02 10:21:00  
 author: Reon
 header-img: "img/post-bg-06.jpg"
 ---

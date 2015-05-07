@@ -2,6 +2,7 @@
 layout: post   
 title: 关于Git忽略文件 
 subtitle: 已经比较熟悉Git的同学可以绕道啦＝w＝  
+category: 技术向
 date: 2015-05-06 10:56:00    
 author: Reon    
 header-img: "img/git.jpg"  

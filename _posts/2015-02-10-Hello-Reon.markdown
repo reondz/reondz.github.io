@@ -2,6 +2,7 @@
 layout: post
 title: Hello,Reon
 subtitle: 关于折腾Blog的那些事
+category: 技术向
 date: 2015-02-10 21:13:00
 author: Reon
 header-img: "img/post-bg-06.jpg"
