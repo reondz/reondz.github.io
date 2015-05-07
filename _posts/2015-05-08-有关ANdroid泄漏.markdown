@@ -1,0 +1,67 @@
+---
+layout: post  
+title: 关于Android内存泄漏的二三事  
+subtitle: 
+category: 技术向
+date: 2015-05-08 00:39:00
+author: Reon
+header-img: "img/post-bg-01.jpg"
+---
+该文只是简单的聊了一下Android内存泄漏，同时给更深入的思考起了个头。  
+
+###内存泄漏是什么
+
+简单来说，就是在Java虚拟机中，有那么一块内存，实际上你是用不到的，但是却被一直hold住了，因为这快内存链接到了GC Root，所以系统GC也无法释放。这样可用内存莫名的就变小了，也就是所谓的内存泄漏。
+
+<!--more-->  
+
+###分析工具  
+
+Android提供了两个分析应用程序内存使用情况的工具，[Allocation Tracker](http://android-developers.blogspot.com/2009/02/track-memory-allocations.html)以及`heap dumps`。这里我们主要关注heap dumps。  
+
+一个`heap dump`就是一个程序heap的快照，它保存成后缀为HPROF的二进制文格式。Android的Dalvik用的也是类似的格式，但是并不完全相同。生成heap dump的方法有很多，调试时可以使用DDMS的`Dump HPROF file`按钮，也可以在程序中使用`android.os.Debug.dumpHprofData()`方法生成更精确的dump数据。  
+
+接下来就是分析.hprof文件了，不过在这之前，我们需要把.hprof文件从Davik格式转成J2SE HPROF格式。可以使用Android SDK提供的hprof-conv工具。例如:
+  
+	hprof-conv dump.hprof converted-dump.hprof 
+	
+如果不转换的话，使用分析工具[MAT](http://www.eclipse.org/mat/)打开，会提示如下错误:
+
+	Error opening heap dump 'system_process.hprof'. Check the error log for further details.  
+	Unknown HPROF Version (JAVA PROFILE 1.0.3) (java.io.IOException)  
+	Unknown HPROF Version (JAVA PROFILE 1.0.3)  
+	
+上面提到了[MAT](http://www.eclipse.org/mat/)，它就是我们常用来分析内存泄漏的工具。关于它的使用，这里就不细说。有兴趣深入研究的同学，可以自行检索。  
+
+###Android内存泄漏的常见场景
+
+####一、资源对象没有关闭  
+类似`Cursor`,`File`,`outputStream`等对象，它们往往都使用了一些缓冲，这些缓冲消耗的内存既有Java Heap也有Native Heap的，因此如果不主动调用`close()`方法去关闭它，不但有通过GC去释放内存效率低的问题，还有处于Native Heap的内存泄漏的问题。  
+  
+####二、Context的泄漏
+Android中非常多的资源加载和使用时都需要传入一个Context，比如当我们new一个View的时候，使用的是Activity的Context，这就意味着，该View拥有一个完整的Activity的引用。现在假设如果该View是一个ImageView，它承载的Bitmap很大，你在屏幕旋转时，不想销毁它，于是就让它变为static的。于是问题就来了，当屏幕旋转时，Bitmap不会销毁，导致了View不会回收，导致了Activity内存的泄漏。  
+这里给出几个建议: 
+ 
+	1. 不要对Activity的Context长期引用
+	2. 有时可尝试使用Application Context来代替Activity的Context
+	3. 某些地方尝试使用弱引用
+
+
+####三、没有反注册导致的泄漏
+举例，在某个Activity中有一个PhoneStateListener的成员变量，且在oncreate时，将此listener注册到TelephonyManager服务中。如果在对应的OnDestory中，没有反注册的话，Activity销毁时，Activity便会有泄漏。
+解决方案：注册和反注册必须成对出现，OnCreate<－>OnDestory，OnResume<－>OnPause。  
+
+####四、线程问题导致
+这里有两种情况：
+1. 内部类线程周期过长，导致Activity内存泄漏。  
+2. 忘记销毁线程，导致后台线程越跑越多。  
+第一种情况，静态内部类可以解决问题。同时如果需要引用Activity，可以使用软引用。如果觉得每次都要get很烦，还可以封装一层，写一个WeakReferenceHandler<T>。  
+第二种情况，记的要在对应的生命周期做对应处理就可以了。  
+
+###内存泄漏的预防
+实际上，上面提到的内部类线程Lint是可以检测出来的，那么是否有办法通过一些组件实现应用运势检测内存泄漏呢？  
+`####To be continue。  `
+
+
+
+
