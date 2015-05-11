@@ -1,6 +1,6 @@
 ---
 layout: post  
-title: LeakCanary，~~告别侧漏~~  
+title: LeakCanary，告别侧漏  
 subtitle:  
 category: 译文   
 date: 2015-05-11 14:05:00  
