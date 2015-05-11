@@ -1,9 +1,10 @@
 ---
 layout: post  
 title: 2015  
-subtitle: 
-date: 2015-03-02 10:21:00
-author: Reon
+subtitle:  
+category: 译文  
+date: 2015-03-02 10:21:00  
+author: Reon  
 header-img: "img/post-bg-06.jpg"
 ---
 回想起来，没有觉得有某一年是对自己特别有意义的，所以，就让2015做个开始吧。
