@@ -39,6 +39,7 @@ Dalvik 虚拟机为开发者提供了动态加载类的功能。不但可以从�
 第二个 dex 中，包含了 `LibrarProvider` 类，存储在了应用的 asset 目录。首先，我们需要把这个 dex 文件转移至一个 class loader 可以访问的路径位置中。示例应用中使用了内部存储。（技术山来说，外部存储一样可以达到效果，但是必须考虑的是将应用的 dex 文件放在外部存储的潜在安全风险。）   
 
 下面的代码片段来自 `MainActivity` 用于完成 dex 文件的拷贝转移。     
+
 	// Before the secondary dex file can be processed by the DexClassLoader,
 	// it has to be first copied from asset resource to a storage location.
 	File dexInternalStoragePath = new File(getDir("dex", Context.MODE_PRIVATE),
@@ -65,6 +66,7 @@ Dalvik 虚拟机为开发者提供了动态加载类的功能。不但可以从�
 接下来， 实例化一个 [DexClassLoader](http://developer.android.com/reference/dalvik/system/DexClassLoader.html) 用于从去处的第二个 dex 中加载对用的 lib。在这种情形下加载的类，有几种不同的方式去调用它的方法。在示例应用中，对应的类实例被强转成接口，从而直接调用方法。   
 
 另外一种方法是通过反射调用，反射调用的好处是，不需要副 dex 去实现特定的接口。然而，要注意的是反射调用麻烦且低效。   
+
 	// Internal storage where the DexClassLoader writes the optimized dex file to
 	final File optimizedDexOutputPath = getDir("outdex", Context.MODE_PRIVATE);
 
