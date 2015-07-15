@@ -39,57 +39,51 @@ Dalvik 虚拟机为开发者提供了动态加载类的功能。不但可以从�
 第二个 dex 中，包含了 `LibrarProvider` 类，存储在了应用的 asset 目录。首先，我们需要把这个 dex 文件转移至一个 class loader 可以访问的路径位置中。示例应用中使用了内部存储。（技术山来说，外部存储一样可以达到效果，但是必须考虑的是将应用的 dex 文件放在外部存储的潜在安全风险。）   
 
 下面的代码片段来自 `MainActivity` 用于完成 dex 文件的拷贝转移。     
+	// Before the secondary dex file can be processed by the DexClassLoader,
+	// it has to be first copied from asset resource to a storage location.
+	File dexInternalStoragePath = new File(getDir("dex", Context.MODE_PRIVATE),
+	      SECONDARY_DEX_NAME);
+	...
+	BufferedInputStream bis = null;
+	OutputStream dexWriter = null;
 
-```java
-// Before the secondary dex file can be processed by the DexClassLoader,
-// it has to be first copied from asset resource to a storage location.
-File dexInternalStoragePath = new File(getDir("dex", Context.MODE_PRIVATE),
-      SECONDARY_DEX_NAME);
-...
-BufferedInputStream bis = null;
-OutputStream dexWriter = null;
-
-static final int BUF_SIZE = 8 * 1024;
-try {
-  bis = new BufferedInputStream(getAssets().open(SECONDARY_DEX_NAME));
-  dexWriter = new BufferedOutputStream(
-      new FileOutputStream(dexInternalStoragePath));
-  byte[] buf = new byte[BUF_SIZE];
-  int len;
-  while((len = bis.read(buf, 0, BUF_SIZE)) > 0) {
-      dexWriter.write(buf, 0, len);
-  }
-  dexWriter.close();
-  bis.close();
-  
-} catch (. . .) {...} 
-```
+	static final int BUF_SIZE = 8 * 1024;
+	try {
+	  bis = new BufferedInputStream(getAssets().open(SECONDARY_DEX_NAME));
+	  dexWriter = new BufferedOutputStream(
+	      new FileOutputStream(dexInternalStoragePath));
+	  byte[] buf = new byte[BUF_SIZE];
+	  int len;
+	  while((len = bis.read(buf, 0, BUF_SIZE)) > 0) {
+	      dexWriter.write(buf, 0, len);
+	  }
+	  dexWriter.close();
+	  bis.close();
+	  
+	} catch (. . .) {...} 
 
 接下来， 实例化一个 [DexClassLoader](http://developer.android.com/reference/dalvik/system/DexClassLoader.html) 用于从去处的第二个 dex 中加载对用的 lib。在这种情形下加载的类，有几种不同的方式去调用它的方法。在示例应用中，对应的类实例被强转成接口，从而直接调用方法。   
 
 另外一种方法是通过反射调用，反射调用的好处是，不需要副 dex 去实现特定的接口。然而，要注意的是反射调用麻烦且低效。   
+	// Internal storage where the DexClassLoader writes the optimized dex file to
+	final File optimizedDexOutputPath = getDir("outdex", Context.MODE_PRIVATE);
 
-```java
-// Internal storage where the DexClassLoader writes the optimized dex file to
-final File optimizedDexOutputPath = getDir("outdex", Context.MODE_PRIVATE);
-
-DexClassLoader cl = new DexClassLoader(dexInternalStoragePath.getAbsolutePath(),
-                                     optimizedDexOutputPath.getAbsolutePath(),
-                                     null,
-                                     getClassLoader());
-Class libProviderClazz = null;
-try {
-  // Load the library.
-  libProviderClazz =
-      cl.loadClass("com.example.dex.lib.LibraryProvider");
-  // Cast the return object to the library interface so that the
-  // caller can directly invoke methods in the interface.
-  // Alternatively, the caller can invoke methods through reflection,
-  // which is more verbose. 
-  LibraryInterface lib = (LibraryInterface) libProviderClazz.newInstance();
-  lib.showAwesomeToast(this, "hello");
-} catch (Exception e) { ... }
-```
+	DexClassLoader cl = new DexClassLoader(dexInternalStoragePath.getAbsolutePath(),
+	                                     optimizedDexOutputPath.getAbsolutePath(),
+	                                     null,
+	                                     getClassLoader());
+	Class libProviderClazz = null;
+	try {
+	  // Load the library.
+	  libProviderClazz =
+	      cl.loadClass("com.example.dex.lib.LibraryProvider");
+	  // Cast the return object to the library interface so that the
+	  // caller can directly invoke methods in the interface.
+	  // Alternatively, the caller can invoke methods through reflection,
+	  // which is more verbose. 
+	  LibraryInterface lib = (LibraryInterface) libProviderClazz.newInstance();
+	  lib.showAwesomeToast(this, "hello");
+	} catch (Exception e) { ... }
 
 ### 打包过程
 
@@ -98,34 +92,30 @@ try {
 修改 "-dex" 目标有以下步骤：   
 
 1. 创建 2 个目录用于存储会被转换成主 dex 和 副 dex 的 .class文件。
-2. 选择性的拷贝 PROJECT_ROOT/bin/classes 中的 .class 文件到 2 个目录中去。
+2. 选择性的拷贝 PROJECT_ROOT/bin/classes 中的 .class 文件到 2 个目录中去。   
 
-	```xml
-	<!-- Primary dex to include everything but the concrete library
-                 implementation. -->
-            <copy todir="${out.classes.absolute.dir}.1" >
-                <fileset dir="${out.classes.absolute.dir}" >
-                        <exclude name="com/example/dex/lib/**" />
-                </fileset>
-            </copy>
-            <!-- Secondary dex to include the concrete library implementation. -->
-            <copy todir="${out.classes.absolute.dir}.2" >
-                <fileset dir="${out.classes.absolute.dir}" >
-                        <include name="com/example/dex/lib/**" />
-                </fileset>
-            </copy>     
-	```
-	
+		<!-- Primary dex to include everything but the concrete library implementation. -->
+		<copy todir="${out.classes.absolute.dir}.1" >
+		<fileset dir="${out.classes.absolute.dir}" >
+			<exclude name="com/example/dex/lib/**" />
+		</fileset>
+		</copy>
+		<!-- Secondary dex to include the concrete library implementation. -->
+		<copy todir="${out.classes.absolute.dir}.2" >
+		<fileset dir="${out.classes.absolute.dir}" >
+			<include name="com/example/dex/lib/**" />
+		</fileset>
+		</copy>     
 
 3. 转换 2 个目录中的 .class 文件为 2 个分开的 dex 文件。
 4. 将副 dex 文件转换为一个 jar 包，因为这是 `DexClassLoader` 输入需要的格式。最后，将这个 jar 包存储在工程的 "asset" 目录。
 
-	```xml
-	<!-- Package the output in the assets directory of the apk. -->
+
+		<!-- Package the output in the assets directory of the apk. -->
 		<jar destfile="${asset.absolute.dir}/secondary_dex.jar"
 			  basedir="${out.absolute.dir}/secondary_dex_dir"
-	         includes="classes.dex" />
-	```
+		     includes="classes.dex" />
+
                    
 在工程根目录下执行 ant debug（或者release）命令触发打包。   
 
