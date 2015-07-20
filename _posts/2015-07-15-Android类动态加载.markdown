@@ -50,16 +50,16 @@ Dalvik 虚拟机为开发者提供了动态加载类的功能。不但可以从�
 
 	static final int BUF_SIZE = 8 * 1024;
 	try {
-	  bis = new BufferedInputStream(getAssets().open(SECONDARY_DEX_NAME));
-	  dexWriter = new BufferedOutputStream(
-	      new FileOutputStream(dexInternalStoragePath));
-	  byte[] buf = new byte[BUF_SIZE];
-	  int len;
-	  while((len = bis.read(buf, 0, BUF_SIZE)) > 0) {
-	      dexWriter.write(buf, 0, len);
-	  }
-	  dexWriter.close();
-	  bis.close();
+	    bis = new BufferedInputStream(getAssets().open(SECONDARY_DEX_NAME));
+	    dexWriter = new BufferedOutputStream(
+	        new FileOutputStream(dexInternalStoragePath));
+	    byte[] buf = new byte[BUF_SIZE];
+	    int len;
+	    while((len = bis.read(buf, 0, BUF_SIZE)) > 0) {
+	        dexWriter.write(buf, 0, len);
+	    }
+	    dexWriter.close();
+	    bis.close();
 	  
 	} catch (. . .) {...} 
 
@@ -76,15 +76,14 @@ Dalvik 虚拟机为开发者提供了动态加载类的功能。不但可以从�
 	                                     getClassLoader());
 	Class libProviderClazz = null;
 	try {
-	  // Load the library.
-	  libProviderClazz =
-	      cl.loadClass("com.example.dex.lib.LibraryProvider");
-	  // Cast the return object to the library interface so that the
-	  // caller can directly invoke methods in the interface.
-	  // Alternatively, the caller can invoke methods through reflection,
-	  // which is more verbose. 
-	  LibraryInterface lib = (LibraryInterface) libProviderClazz.newInstance();
-	  lib.showAwesomeToast(this, "hello");
+	    // Load the library.
+	    libProviderClazz = cl.loadClass("com.example.dex.lib.LibraryProvider");
+	    // Cast the return object to the library interface so that the
+	    // caller can directly invoke methods in the interface.
+	    // Alternatively, the caller can invoke methods through reflection,
+	    // which is more verbose. 
+	    LibraryInterface lib = (LibraryInterface) libProviderClazz.newInstance();
+	    lib.showAwesomeToast(this, "hello");
 	} catch (Exception e) { ... }
 
 ### 打包过程

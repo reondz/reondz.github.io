@@ -1,0 +1,45 @@
+---
+layout: post  
+title: ToolsBar 详解
+subtitle:  
+category: Android  
+date: 2015-07-20 11:03:00  
+author: Reon  
+header-img: "img/post-bg-03.jpg"
+---
+创业公司的项目不像大公司，由于不需要照顾各个不同的使用群体，也没有历史包袱，所以可以放开了使用一些 Android 新特性。ToolsBar 作为Actionbar 的替代品，在开发中会被大量使用，现总结一下 ToolsBar 的有关知识， 学习的同时也把这些知识沉淀下来。
+
+<!--more-->   
+
+### 概述
+
+Toolbar 作为 Actionbar 的替代品，有着更为明确的功能。一般而言，在 Toolsbar 中可以有以下元素。
+
+* 导航按钮
+* 品牌logo
+* 主标题以及副标题
+* 一个或多个自定义视图
+* 动作菜单
+
+### 准备工作
+
+Toolsbar 是 Android 5.0 Material Design 的产物。所以分两种情况，如果是 5.0 以及以上的设备，并不需要什么准备。而如果要兼容 5.0 以下的设备，则需要导入 AppCompat v21。具体做法就是在gradle     配置文件中添加如下代码，声明对 AppCompat v21 的依赖。
+
+	dependencies {
+	    compile "com.android.support:appcompat-v7:21.0.+"
+	}
+	
+
+### 基础用法
+
+基本用法分三步走。
+
+1. 修改theme
+2. xml布局文件中添加Toolbar
+3. 代码上对Toolbar做处理
+
+
+
+	
+
+ 
