@@ -38,8 +38,35 @@ Toolsbar 是 Android 5.0 Material Design 的产物。所以分两种情况，如
 2. xml布局文件中添加Toolbar
 3. 代码上对Toolbar做处理
 
+在 theme 中，我们只需要使用 Theme.AppCompat.NoActionBar 的主题或者在主题中设置没有 Actionbar (`<item name="windowActionBar">false</item>`)即可，如果不改变主题，应用会崩溃，原因则是有两个 ActionBar。   
 
+xml布局中，则需要把 Toolbar 当作一个标准视图控件来添加（注意要使用v7包中的Toolbar,为了兼容5.0以下）。   
 
+而在对应的代码中，首先要求我们使用的 Activity 需要继承自 AppCompatActivity（注意 ActionbarActivity 已经被废弃）。如果没有在 manifest 文件中设置 Activity 主题的需要在代码中设置。
+然后通过 findviewById 获取到 Toolbar，并且调用    
+
+	setSupportActionBar(toolbar);
 	
+完成对 toolbar 的支持。   
 
- 
+至此，一个最基本的使用 Toolbar 的界面便完成了。
+
+### 进阶用法
+
+关于添加动作菜单，logo 就不再多说了。和 Actionbar 是一样一样的套路，这里主要说一下自定义颜色这一块。   
+
+需要配置的颜色以及对应的属性总共有4个，从上至下依次是：  
+
+1. 状态栏的颜色：theme中`colorPrimaryDark`
+2. Toolbar的颜色：设置toolbar的`background`
+3. 主视窗的底色：theme中`windowBackground`
+4. 导航栏（下巴）的颜色：theme中`navigationBarColor` 
+
+注意，1与4只有5.0以及以上版本才可用。2中如果用的依然是Actionbar，则可使用 theme 中的 `colorPrimary`。  
+
+到了这里，基本使用 Toolbar 的方法已经说的差不多了。有兴趣的同学可以实战一下。
+
+参考文章：  
+
+* http://www.cnblogs.com/noodlesonce/p/4116414.html?utm_source=tuicool
+* http://android-developers.blogspot.com/2014/10/appcompat-v21-material-design-for-pre.html
